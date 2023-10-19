@@ -1,4 +1,13 @@
-# Load packages, read in data, and select quasi-identifiers --------
+---
+title: "Customer Identification Data Report"
+author: "Adeline Casali"
+output: pdf_document
+date: "2023-10-15"
+---
+
+# Load packages, read in data, and select quasi-identifiers
+In this section, I first loaded in all necessary packages. Next, I read in the data and select the quasi-identifiers to be shared with the telecommunications company our firm has a partnership with. I selected gender, age, years of education, and marital status to be analyzed in conjunction with the customer's tenure with the phone company. This will allow the partner company to determine which age, gender, marital status, and education statuses have the highest tenure, making them "good customers". 
+```{r}
 # Load packages
 library(tidyverse)
 library(readxl)
@@ -13,9 +22,11 @@ customer_df <- read_excel("Data/Customer_Data.xlsx")
 customer_selects_df <- customer_df %>% 
   select(gender = Gender, age = Age, phoneco_tenure = PhoneCoTenure, 
          education_years = EducationYears, marital_status = MaritalStatus)
+```
 
-# Perform data quality control - Check for outliers and null values -----------
-
+# Perform data quality control - Check for outliers and null values
+As the first part of my analysis, I checked the data for outliers, null values, and other values that just don't make sense. For binary columns, I checked for numbers other than 1 or 0, and for non-binary columns I looked at the 5 lowest and highest results to determine if any were out of the ordinary.  
+```{r}
 cat(ifelse(any(customer_selects_df$gender != 0 & customer_selects_df$gender != 1), 
            paste("Numbers in 'gender' column that are not 0 or 1:", 
                  customer_selects_df$gender[customer_selects_df$gender != 0 & customer_selects_df$gender != 1], sep = "\n"), 
@@ -77,18 +88,22 @@ cat(ifelse(length(customer_selects_df$marital_status[is.na(customer_selects_df$m
                  customer_selects_df$marital_status[is.na(customer_selects_df$marital_status)], 
                  sep = "\n"), "None found in 'marital_status' column"), "\n")
 # No outliers or null values found in the marital_status column 
+```
 
-# Check current equivalence classes ---------------------------------------
-
+# Check current equivalence classes
+Next, I checked the current equivalence classes. There were many classes with only one unique customer in them, so grouping is needed to decrease the uniqueness of those customers. 
+```{r}
 equivalence_classes <- customer_selects_df %>%
   group_by_all() %>%
   tally(name = "class_size")
-print(equivalence_classes %>% arrange(class_size))
-# There are currently many equivalence classes with only one customer, and a maximum of 6 customers in an equivalence class
+print(head(equivalence_classes %>% arrange(class_size)))
+# There are currently many equivalence classes with only one customer, 
+#and a maximum of 6 customers in an equivalence class
+```
 
-
-# Perform grouping to decrease the number of unique customers -------------
-
+# Perform grouping to decrease the number of unique customers
+In this section, I performed grouping within the age, education_years, and phoneco_tenure columns to decrease the number of unique customers until there were no unique customers. 
+```{r}
 # Group age by a 15 year range, with <25 and 55+ as the upper and lowers
 customer_selects_df$age <- cut(customer_selects_df$age, 
                                      breaks = c(0, 30, 45, 60, 100),
@@ -98,7 +113,7 @@ customer_selects_df$age <- cut(customer_selects_df$age,
 equivalence_classes <- customer_selects_df %>%
   group_by_all() %>%
   tally(name = "class_size")
-print(equivalence_classes %>% arrange(class_size))
+print(head(equivalence_classes %>% arrange(class_size)))
 # There are still many unique customers, so more grouping needs to be done
 
 # Group education_years by <15 (no college degree) or 15+ (college degree)
@@ -110,7 +125,7 @@ customer_selects_df$education_years <- cut(customer_selects_df$education_years,
 equivalence_classes <- customer_selects_df %>%
   group_by_all() %>%
   tally(name = "class_size")
-print(equivalence_classes %>% arrange(class_size))
+print(head(equivalence_classes %>% arrange(class_size)))
 # There are still many unique customers, so we will now group within the phoneco_tenure column
 
 # Group phoneco_tenure by 24 months
@@ -122,33 +137,41 @@ customer_selects_df$phoneco_tenure <- cut(customer_selects_df$phoneco_tenure,
 equivalence_classes <- customer_selects_df %>%
   group_by_all() %>%
   tally(name = "class_size")
-print(equivalence_classes %>% arrange(class_size))
+print(head(equivalence_classes %>% arrange(class_size)))
+```
 
-# Add in column for probability of re-identification ----------------------
-
+# Add in column for probability of re-identification
+Next, I added in a column with the probability of re-identification for each of the equivalence classes based on class size. I used this information to calculate the maximum and median probabilities of re-identification. 
+```{r}
 equivalence_classes <- equivalence_classes %>%
   mutate(p_re_id = round(1/ class_size, 2))
 
 # Calculate the maximum and median risks
 p_max <- max(equivalence_classes$p_re_id)
-print(p_max)
+cat("The maximum probability of re-identification is:", p_max, "\n")
 p_med <- median(equivalence_classes$p_re_id)
-print(p_med)
+cat("The median probability of re-identification is:", p_med, "\n")
+```
 
-# Scenario 1 Calculations -------------------------------------------------
+# Scenario 1 Calculations
+I used the probability of re-identification from above to calculate the maximum and median risks of re-identification under scenario 1. 
+```{r}
 # Formula: p(re-id|attempt) * p(attempt)
 # Being conservative and assuming the mitigating controls are low and the motives and capacity are high, p(attempt) = 0.6
 p_attempt <- 0.6
 
 # Calculation with max probability of re-identification
 s1_max_risk <- ((p_max*p_attempt)/p_attempt)*p_attempt
-print(s1_max_risk)
+cat("The maximum probability of re-identification for scenario 1 is:", s1_max_risk, "\n")
 
 # Calculation with median probability of re-identification
 s1_med_risk <- ((p_med*p_attempt)/p_attempt)*p_attempt
-print(s1_med_risk)
+cat("The median probability of re-identification for scenario 1 is:", s1_med_risk, "\n")
+```
 
-# Scenario 2 Calculations -------------------------------------------------
+# Scenario 2 Calculations
+And repeated that with scenario 2. 
+```{r}
 # Formulas: p(re-id|acquanit) * p(acquaint), p(acquaint) = 1-(1-p)^m
 p <- 0.97
 m <- 150
@@ -156,38 +179,46 @@ p_acquaint <- 1-(1-p)^m
 
 # Calculation with max probability of re-identification
 s2_max_risk <- ((p_max*p_acquaint)/p_acquaint)*p_acquaint
-print(s2_max_risk)
+cat("The maximum probability of re-identification for scenario 2 is:", s2_max_risk, "\n")
 
 # Calculation with median probability of re-identification
 s2_med_risk <- ((p_med*p_acquaint)/p_acquaint)*p_acquaint
-print(s2_med_risk)
+cat("The median probability of re-identification for scenario 2 is:", s2_med_risk, "\n")
+```
 
-# Scenario 3 Calculations -------------------------------------------------
+# Scenario 3 Calculations
+And scenario 3. 
+```{r}
 # Formula: p(re-id|breach)*p(breach)
 # Being conservative, we will assume the likelihood of a breach is the same as that of a healthcare company at 27%
 p_breach <- 0.27
 
 # Calculation with max probability of re-identification
 s3_max_risk <- ((p_max*p_breach)/p_breach)*p_breach
-print(s3_max_risk)
+cat("The maximum probability of re-identification for scenario 3 is:", s3_max_risk, "\n")
 
 # Calculation with median probability of re-identification
 s3_med_risk <- ((p_med*p_breach)/p_breach)*p_breach
-print(s3_med_risk)
+cat("The median probability of re-identification for scenario 3 is:", s3_med_risk, "\n")
+```
 
-# Scenario 4 Calculations -------------------------------------------------
+# Scenario 4 Calculations
+And finally, scenario 4.  
+```{r}
 # Formula: p(re-id)
 
 # Calculation with max probability of re-identification
 s4_max_risk <- p_max
-print(s4_max_risk)
+cat("The maximum probability of re-identification for scenario 4 is:", s4_max_risk, "\n")
 
 # Calculation with median probability of re-identification
 s4_med_risk <- p_med
-print(s4_med_risk)
+cat("The median probability of re-identification for scenario 4 is:", s4_med_risk, "\n")
+```
 
-# Create a table with results ---------------------------------------------
-
+# Create a table with results
+Next, I took the risk calculations from the different scenarios and compiled a table with the maximum, median, and assessment of results from each of the scenarios. I based the assessment on a threshold of 33%, as discussed further in the certification report. 
+```{r}
 risk_results <- data.frame(
   Results = c("Max Risk", "Median Risk", "Assessment"), 
   S1 = c("30%", "1.2%", "Tolerable"), 
@@ -196,8 +227,8 @@ risk_results <- data.frame(
   S4 = c("50%", "2%", "Unacceptable")
 )
 
-risk_table <- kable(risk_results, format = "html") %>%
-  kable_styling(full_width = FALSE)
+risk_table <- kable(risk_results, format = "latex") %>%
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
 risk_table <- risk_table %>%
   column_spec(1, background = "lightgray") %>% 
   column_spec(2, background = "green") %>% 
@@ -206,10 +237,12 @@ risk_table <- risk_table %>%
   column_spec(5, background = "red")
 
 # Print the formatted table
-print(risk_table)
+risk_table
+```
 
-# Calculate risk ranges ---------------------------------------------------
-
+# Create a table with risk ranges
+Finally, I created a table with the percentage of customers at each risk range for each scenario. 
+```{r}
 # Scenario 1
 equivalence_classes <- equivalence_classes %>%
   mutate(s1_risk = round(((p_re_id*p_attempt)/p_attempt)*p_attempt, 2))
@@ -242,22 +275,18 @@ s1_sum_class_size <- equivalence_classes %>%
   group_by(s1_risk) %>%
   summarize(percent_risk = (sum(class_size)/5000)) %>%
   ungroup()
-print(s1_sum_class_size)
 s2_sum_class_size <- equivalence_classes %>%
   group_by(s2_risk) %>%
   summarize(percent_risk = (sum(class_size)/5000)) %>%
   ungroup()
-print(s2_sum_class_size)
 s3_sum_class_size <- equivalence_classes %>%
   group_by(s3_risk) %>%
   summarize(percent_risk = (sum(class_size)/5000)) %>%
   ungroup()
-print(s3_sum_class_size)
 s4_sum_class_size <- equivalence_classes %>%
   group_by(s4_risk) %>%
   summarize(percent_risk = (sum(class_size)/5000)) %>%
   ungroup()
-print(s4_sum_class_size)
 
 # Create a table with risk ranges
 risk_ranges <- data.frame(
@@ -268,7 +297,8 @@ risk_ranges <- data.frame(
   S4 = c("96.5%", "2.7%", "0.06%", "0.02%", "0", "0")
 )
 
-risk_ranges_table <- kable(risk_ranges, format = "html") %>%
-  kable_styling(full_width = FALSE)
-print(risk_ranges_table)
+risk_ranges_table <- kable(risk_ranges, format = "latex") %>%
+  kable_styling(full_width = TRUE, latex_options = "HOLD_position")
+risk_ranges_table
+```
 
