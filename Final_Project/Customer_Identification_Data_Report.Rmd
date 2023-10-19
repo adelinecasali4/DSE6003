@@ -157,7 +157,8 @@ cat("The median probability of re-identification is:", p_med, "\n")
 I used the probability of re-identification from above to calculate the maximum and median risks of re-identification under scenario 1. 
 ```{r}
 # Formula: p(re-id|attempt) * p(attempt)
-# Being conservative and assuming the mitigating controls are low and the motives and capacity are high, p(attempt) = 0.6
+# Being conservative and assuming the mitigating controls are low and the 
+#motives and capacity are high, p(attempt) = 0.6
 p_attempt <- 0.6
 
 # Calculation with max probability of re-identification
