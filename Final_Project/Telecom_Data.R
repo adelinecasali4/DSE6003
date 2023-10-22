@@ -225,16 +225,16 @@ equivalence_classes <- equivalence_classes %>%
 
 # Create risk ranges
 equivalence_classes$s1_risk <- cut(equivalence_classes$s1_risk, 
-                               breaks = c(-1, 0.05, 0.10, 0.20, 0.33, 0.5, 1),
-                               labels = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"))
+                                   breaks = c(-1, 0.06, 0.11, 0.21, 0.34, 0.51, 1),
+                                   labels = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"))
 equivalence_classes$s2_risk <- cut(equivalence_classes$s2_risk, 
-                                   breaks = c(-1, 0.05, 0.10, 0.20, 0.33, 0.5, 1),
+                                   breaks = c(-1, 0.06, 0.11, 0.21, 0.34, 0.51, 1),
                                    labels = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"))
 equivalence_classes$s3_risk <- cut(equivalence_classes$s3_risk, 
-                                   breaks = c(-1, 0.05, 0.10, 0.20, 0.33, 0.5, 1),
+                                   breaks = c(-1, 0.06, 0.11, 0.21, 0.34, 0.51, 1),
                                    labels = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"))
 equivalence_classes$s4_risk <- cut(equivalence_classes$s4_risk, 
-                                   breaks = c(-1, 0.05, 0.10, 0.20, 0.33, 0.5, 1),
+                                   breaks = c(-1, 0.06, 0.11, 0.21, 0.34, 0.51, 1),
                                    labels = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"))
 
 # Count the class size for each risk range
@@ -262,10 +262,10 @@ print(s4_sum_class_size)
 # Create a table with risk ranges
 risk_ranges <- data.frame(
   Risk = c("<5%", "<10%", "<20%", "<33%", "<50%", ">50%"), 
-  S1 = c("99.2%", "0.05%", "0.03%", "0", "0", "0"), 
-  S2 = c("96.5%", "2.7%", "0.06%", "0.02%", "0", "0"), 
-  S3 = c("99.8%", "0.02%", "0", "0", "0", "0"), 
-  S4 = c("96.5%", "2.7%", "0.06%", "0.02%", "0", "0")
+  S1 = c("99.2%", "0.05%", "0.03%", "0.0004", "0", "0"), 
+  S2 = c("96.5%", "2.7%", "0.06%", "0.02%", "0.0004", "0"), 
+  S3 = c("99.8%", "0.02%", "0.0004", "0", "0", "0"), 
+  S4 = c("96.5%", "2.7%", "0.06%", "0.02%", "0.0004", "0")
 )
 
 risk_ranges_table <- kable(risk_ranges, format = "html") %>%
